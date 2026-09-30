@@ -1,0 +1,13 @@
+:root{--ink:#3b2a20;--amber:#f2a33a;--mint:#e3f4ea;--bs-body-font-family:'Bricolage Grotesque',system-ui,sans-serif;--bs-body-bg:#f7fbf8}
+body{color:var(--ink)}
+.navbar{background:var(--ink)}
+.navbar .nav-link,.navbar-brand{color:#fff!important}.navbar .nav-link.active{color:var(--amber)!important}
+.btn-primary{--bs-btn-bg:var(--ink);--bs-btn-border-color:var(--ink);--bs-btn-hover-bg:#5a4030;--bs-btn-hover-border-color:#5a4030;--bs-btn-active-bg:#5a4030}
+.btn-accent{background:var(--amber);border-color:var(--amber);color:var(--ink);font-weight:600}
+.hero{background:var(--ink);color:#fff;padding:5rem 0 4rem}
+.hero h1{font-weight:800;font-size:clamp(2.6rem,9vw,6rem);line-height:.95;letter-spacing:-.03em}
+.hero p{max-width:34rem;color:#e9dccf}
+.featured{background:var(--mint);border-left:8px solid var(--amber);border-radius:.5rem}
+.event-card{border:1px solid #d7e6dc;border-radius:.5rem}
+.event-card:hover{border-color:var(--ink)}
+@media (prefers-reduced-motion:no-preference){.event-card{transition:border-color .15s}}
