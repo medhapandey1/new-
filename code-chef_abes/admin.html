@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Admin Dashboard – CodeChef ABESEC</title>
+<style>
+:root{--bg:#faf6f0;--card:#fff;--tx:#2a1f17;--mu:#7d6b5c;--ac:#e0580f;--bd:#eadfd2;--ok:#1a8f5a;--dg:#d33}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+header{position:sticky;top:0;background:var(--card);border-bottom:1px solid var(--bd);z-index:5}
+nav{max-width:1100px;margin:auto;display:flex;align-items:center;gap:14px;padding:12px 16px}
+nav b{font-size:1.05rem}nav b span{color:var(--ac)}
+.tabs{display:flex;gap:6px;margin-left:auto}
+.tab{border:1px solid var(--bd);background:var(--card);color:var(--mu);padding:8px 16px;border-radius:99px;font:inherit;font-weight:600;cursor:pointer}
+.tab.on{background:var(--ac);color:#fff;border-color:var(--ac)}
+main{max-width:1100px;margin:auto;padding:18px 16px 60px}
+.head{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+h1{font-size:1.4rem;margin:0}
+.bar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+input,select,textarea{font:inherit;color:var(--tx);background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:9px 12px;width:100%}
+.bar input,.bar select{flex:1 1 180px;width:auto}
+.btn{border:0;cursor:pointer;background:var(--ac);color:#fff;padding:9px 16px;border-radius:10px;font:inherit;font-weight:700}
+.btn.o{background:transparent;color:var(--tx);border:1px solid var(--bd)}
+.btn.dg{background:#fdeaea;color:var(--dg)}
+.btn.sm{padding:6px 12px;font-size:.85rem}
+.w{overflow-x:auto;background:var(--card);border:1px solid var(--bd);border-radius:14px}
+table{border-collapse:collapse;width:100%;min-width:820px}
+th,td{padding:10px 14px;text-align:left;border-bottom:1px solid var(--bd);white-space:nowrap}
+th{background:#f3ece2;font-size:.8rem;text-transform:uppercase;color:var(--mu);position:sticky;top:0}
+tr:last-child td{border-bottom:0}
+.actions{display:flex;gap:6px}
+.badge{display:inline-block;background:color-mix(in srgb,var(--ac) 15%,transparent);color:var(--ac);border-radius:99px;padding:2px 10px;font-size:.75rem;font-weight:700}
+.empty{text-align:center;color:var(--mu);padding:40px}
+.modal{position:fixed;inset:0;background:#0009;display:none;align-items:center;justify-content:center;padding:16px;z-index:20}
+.modal.open{display:flex}
+.box{background:var(--card);border-radius:16px;padding:22px;width:100%;max-width:520px;max-height:92%;overflow:auto}
+.box h3{margin:0 0 14px}
+label{display:block;font-weight:600;font-size:.85rem;margin-top:12px;margin-bottom:5px}
+.row{display:grid;gap:0 10px;grid-template-columns:1fr}
+@media(min-width:480px){.row{grid-template-columns:1fr 1fr}}
+.err{color:var(--dg);font-size:.8rem;min-height:1.2em;margin-top:8px}
+.acts{display:flex;gap:10px;margin-top:16px;justify-content:flex-end}
+.stats{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:18px}
+.stat{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:12px 18px}
+.stat b{display:block;font-size:1.3rem;color:var(--ac)}.stat span{color:var(--mu);font-size:.8rem}
+.em{font-size:1.2rem;margin-right:4px}
+.chk{width:16px;height:16px;vertical-align:-3px}
+</style>
+</head>
+<body>
+<header><nav><b>CodeChef <span>ABESEC</span> · Admin</b>
+<div class="tabs"><button class="tab on" data-tab="events">Events</button><button class="tab" data-tab="regs">Registrations</button></div>
+</nav></header>
+<main id="app"></main>
+<div class="modal" id="modal"><div class="box" id="box"></div></div>
+
+<script>
+const $=s=>document.querySelector(s),app=$("#app"),modal=$("#modal"),box=$("#box");
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const close=()=>modal.classList.remove("open");
+modal.onclick=e=>{if(e.target===modal)close()};
+addEventListener("keydown",e=>{if(e.key==="Escape")close()});
+let events=[],regs=[],tab="events";
+
+async function api(url,opt){const r=await fetch(url,opt);let j={};try{j=await r.json()}catch(e){}
+ if(!r.ok)throw new Error(j.error||"Request failed");return j}
+async function loadAll(){[events,regs]=await Promise.all([api("/api/admin/events"),api("/api/admin/registrations")])}
+
+function fmt(d){return new Date(d).toLocaleString("en-IN",{weekday:"short",day:"numeric",month:"short",hour:"numeric",minute:"2-digit"})}
+function countFor(id){return regs.filter(r=>r.event_id==id).length}
+
+function renderEvents(){
+ const cats=[...new Set(events.map(e=>e.cat))].sort();
+ app.innerHTML=`<div class="stats"><div class="stat"><b>${events.length}</b><span>Total events</span></div>
+ <div class="stat"><b>${regs.length}</b><span>Total registrations</span></div></div>
+ <div class="head"><h1>Events</h1><button class="btn" id="add">+ Add event</button></div>
+ <div class="bar"><input id="q" placeholder="🔍 Search events"><select id="cat"><option value="">All categories</option>${cats.map(c=>`<option>${c}</option>`).join("")}</select></div>
+ <div class="w"><table><thead><tr><th></th><th>Name</th><th>Category</th><th>Date & time</th><th>Venue</th><th>Regs</th><th>Featured</th><th>Actions</th></tr></thead><tbody id="tb"></tbody></table></div>`;
+ const draw=()=>{const q=$("#q").value.toLowerCase(),c=$("#cat").value;
+  const r=events.filter(e=>(!c||e.cat===c)&&e.name.toLowerCase().includes(q)).sort((a,b)=>new Date(a.date)-new Date(b.date));
+  $("#tb").innerHTML=r.length?r.map(e=>`<tr><td class="em">${e.emoji}</td><td>${esc(e.name)}</td><td><span class="badge">${esc(e.cat)}</span></td>
+   <td>${fmt(e.date)}</td><td>${esc(e.venue)}</td><td>${countFor(e.id)}</td><td>${e.featured?"⭐":"—"}</td>
+   <td class="actions"><button class="btn o sm" data-edit="${e.id}">Edit</button><button class="btn dg sm" data-del="${e.id}">Delete</button></td></tr>`).join("")
+   :'<tr><td colspan="8" class="empty">No events found.</td></tr>'};
+ $("#q").oninput=draw;$("#cat").onchange=draw;draw();
+ $("#add").onclick=()=>openForm(null);
+}
+
+function renderRegs(){
+ const evs=[...new Set(regs.map(r=>r.event))].sort();
+ app.innerHTML=`<div class="head"><h1>Registrations</h1><a class="btn o" href="/api/admin/registrations.csv">Download CSV</a></div>
+ <div class="bar"><input id="q" placeholder="🔍 Search name, email, college, phone"><select id="ev"><option value="">All events</option>${evs.map(e=>`<option>${esc(e)}</option>`).join("")}</select></div>
+ <div class="w"><table><thead><tr><th>#</th><th>Event</th><th>Name</th><th>Email</th><th>College</th><th>Year</th><th>Phone</th><th>Registered</th><th></th></tr></thead><tbody id="tb"></tbody></table></div>`;
+ const draw=()=>{const q=$("#q").value.toLowerCase(),ev=$("#ev").value;
+  const r=regs.filter(x=>(!ev||x.event===ev)&&[x.name,x.email,x.college,x.phone].join(" ").toLowerCase().includes(q));
+  $("#tb").innerHTML=r.length?r.map(x=>`<tr><td>${x.id}</td><td><span class="badge">${esc(x.event)}</span></td><td>${esc(x.name)}</td>
+   <td>${esc(x.email)}</td><td>${esc(x.college)}</td><td>${esc(x.year)}</td><td>${esc(x.phone)}</td><td>${esc(x.created_at)}</td>
+   <td><button class="btn dg sm" data-delreg="${x.id}">Remove</button></td></tr>`).join("")
+   :'<tr><td colspan="9" class="empty">No registrations found.</td></tr>'};
+ $("#q").oninput=draw;$("#ev").onchange=draw;draw();
+}
+
+function render(){tab==="events"?renderEvents():renderRegs()}
+
+document.addEventListener("click",async e=>{
+ const del=e.target.closest("[data-del]"),edit=e.target.closest("[data-edit]"),delreg=e.target.closest("[data-delreg]");
+ if(del){if(!confirm("Delete this event and all its registrations? This cannot be undone."))return;
+  await api("/api/admin/events/"+del.dataset.del,{method:"DELETE"});await loadAll();render()}
+ if(edit)openForm(events.find(x=>x.id==edit.dataset.edit));
+ if(delreg){if(!confirm("Remove this registration?"))return;
+  await api("/api/admin/registrations/"+delreg.dataset.delreg,{method:"DELETE"});await loadAll();render()}
+});
+
+function openForm(ev){
+ const v=ev||{name:"",cat:"",date:"",venue:"",desc:"",emoji:"🎉",c:"#e0580f",featured:0};
+ box.innerHTML=`<h3>${ev?"Edit event":"Add event"}</h3>
+ <label>Event name</label><input id="fn" value="${esc(v.name)}" placeholder="e.g. HackVerse 24-Hour Hackathon">
+ <div class="row"><div><label>Category</label><input id="fcat" value="${esc(v.cat)}" placeholder="Technology"></div>
+ <div><label>Emoji</label><input id="fem" value="${esc(v.emoji)}" placeholder="💻" maxlength="4"></div></div>
+ <div class="row"><div><label>Date & time</label><input id="fdate" type="datetime-local" value="${esc((v.date||"").slice(0,16))}"></div>
+ <div><label>Color</label><input id="fc" type="color" value="${esc(v.c)}" style="padding:4px;height:40px"></div></div>
+ <label>Venue</label><input id="fven" value="${esc(v.venue)}" placeholder="Main Auditorium">
+ <label>Description</label><textarea id="fdesc" rows="3" placeholder="What's this event about?">${esc(v.desc)}</textarea>
+ <label><input type="checkbox" class="chk" id="ffeat" ${v.featured?"checked":""}> Feature this on the home page</label>
+ <div class="err" id="ferr"></div>
+ <div class="acts"><button class="btn o" id="cx">Cancel</button><button class="btn" id="sv">${ev?"Save changes":"Add event"}</button></div>`;
+ modal.classList.add("open");$("#fn").focus();$("#cx").onclick=close;
+ $("#sv").onclick=async()=>{
+  const body={name:$("#fn").value.trim(),cat:$("#fcat").value.trim(),date:$("#fdate").value,venue:$("#fven").value.trim(),
+   desc:$("#fdesc").value.trim(),emoji:$("#fem").value.trim(),c:$("#fc").value,featured:$("#ffeat").checked};
+  try{
+   if(ev)await api("/api/admin/events/"+ev.id,{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
+   else await api("/api/admin/events",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
+   await loadAll();close();render();
+  }catch(x){$("#ferr").textContent=x.message}
+ };
+}
+
+document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>{tab=b.dataset.tab;
+ document.querySelectorAll(".tab").forEach(x=>x.classList.toggle("on",x===b));render()});
+
+loadAll().then(render).catch(e=>app.innerHTML=`<div class="empty">Could not load data: ${esc(e.message)}</div>`);
+</script>
+</body>
+</html>
